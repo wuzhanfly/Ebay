@@ -1,36 +1,36 @@
 pragma solidity ^0.4.24;
 import "contracts/Escrow.sol";
 contract EcommerceStore {
- enum ProductStatus { Open, Sold, Unsold }
+ enum ProductStatus { Open, Sold, Unsold }//产品状态
  enum ProductCondition { New, Used }
 
- uint public productIndex;
+ uint public productIndex;//产品id
  mapping (address => mapping(uint => Product)) stores;
- mapping (uint => address) productIdInStore;
+ mapping (uint => address) productIdInStore;//产品id,以及发布人add
  mapping (uint => address) productEscrow;
 
  struct Product {
   uint id;
-  string name;
-  string category;
-  string imageLink;
-  string descLink;
-  uint auctionStartTime;
-  uint auctionEndTime;
-  uint startPrice;
-  address highestBidder;
-  uint highestBid;
-  uint secondHighestBid;
-  uint totalBids;
-  ProductStatus status;
-  ProductCondition condition;
-  mapping (address => mapping (bytes32 => Bid)) bids;
+  string name;//产品名字
+  string category;//分类
+  string imageLink;//图片hash
+  string descLink;//图片描述哈希
+  uint auctionStartTime;//开始竞标时间
+  uint auctionEndTime;//结束时间
+  uint startPrice;//价格
+  address highestBidder;//竞标赢家钱包地址
+  uint highestBid;//赢家竞标价格
+  uint secondHighestBid;//第二高价格地址
+  uint totalBids;//竞标人数
+  ProductStatus status;//状态
+  ProductCondition condition;//新，旧
+  mapping (address => mapping (bytes32 => Bid)) bids;//竞标地址=》bytes32他投标信息（hash）
  }
- struct Bid {
-  address bidder;
+ struct Bid {//投标信息
+  address bidder;//投标人地址
   uint productId;
-  uint value;
-  bool revealed;
+  uint value;//虚值
+  bool revealed;//是否公告
   }
     constructor () public {
   productIndex = 0;
@@ -45,6 +45,8 @@ contract EcommerceStore {
  }
   event NewProduct(uint _productId, string _name, string _category, string _imageLink, string _descLink,
   uint _auctionStartTime, uint _auctionEndTime, uint _startPrice, uint _productCondition);
+
+    /*投标*/
 function bid(uint _productId, bytes32 _bid) public payable returns (bool) {
   Product storage product = stores[productIdInStore[_productId]][_productId];
   require (now >= product.auctionStartTime);
@@ -56,6 +58,7 @@ function bid(uint _productId, bytes32 _bid) public payable returns (bool) {
   product.totalBids += 1;
   return true;
 }
+    /*截标*/
 function revealBid(uint _productId, string _amount, string _secret) public {
   Product storage product = stores[productIdInStore[_productId]][_productId];
   require (now > product.auctionEndTime);
@@ -65,7 +68,7 @@ function revealBid(uint _productId, string _amount, string _secret) public {
   require (bidInfo.bidder > 0);
   require (bidInfo.revealed == false);
 
-  uint refund;
+  uint refund;//退款
 
   uint amount = stringToUint(_amount);
 
@@ -97,15 +100,21 @@ function revealBid(uint _productId, string _amount, string _secret) public {
     product.bids[msg.sender][sealedBid].revealed = true;
    }
   }
+
+
 }function highestBidderInfo(uint _productId) public view returns (address, uint, uint) {
   Product memory product = stores[productIdInStore[_productId]][_productId];
   return (product.highestBidder, product.highestBid, product.secondHighestBid);
 }
 
+
+/*竞标人数*/
 function totalBids(uint _productId) public view returns (uint) {
   Product memory product = stores[productIdInStore[_productId]][_productId];
   return product.totalBids;
 }
+
+
 
 function stringToUint(string s) public pure  returns (uint) {
   bytes memory b = bytes(s);
@@ -117,6 +126,7 @@ function stringToUint(string s) public pure  returns (uint) {
   }
   return result;
 }
+    /*添加产品到区块链*/
  function addProductToStore(string _name, string _category, string _imageLink, string _descLink, uint _auctionStartTime, uint _auctionEndTime, uint _startPrice, uint _productCondition)public  {
   require(_auctionStartTime < _auctionEndTime);
   productIndex += 1;
@@ -125,6 +135,7 @@ function stringToUint(string s) public pure  returns (uint) {
   productIdInStore[productIndex] = msg.sender;
   emit NewProduct(productIndex, _name, _category, _imageLink, _descLink, _auctionStartTime, _auctionEndTime, _startPrice, _productCondition);
  }
+    /*通过产品id读取产品信息*/
  function getProduct(uint _productId) public view returns (uint, string, string, string, string, uint, uint, uint, ProductStatus, ProductCondition) {
   Product memory product = stores[productIdInStore[_productId]][_productId];
   return (product.id, product.name, product.category, product.imageLink, product.descLink, product.auctionStartTime,

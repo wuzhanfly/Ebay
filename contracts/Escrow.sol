@@ -1,12 +1,12 @@
 pragma solidity ^0.4.24;
-contract Escrow {
- uint public productId;
+contract Escrow {//托管合约
+ uint public productId;//产品id
  address public buyer;
  address public seller;
- address public arbiter;
- uint public amount;
- bool public fundsDisbursed;
- mapping (address => bool) releaseAmount;
+ address public arbiter;//仲裁
+ uint public amount;//存储的钱
+ bool public fundsDisbursed;//false 合约中 true：卖家或者买家
+ mapping (address => bool) releaseAmount;//
  uint public releaseCount;
  mapping (address => bool) refundAmount;
  uint public refundCount;
@@ -22,13 +22,14 @@ contract Escrow {
   arbiter = _arbiter;
   amount = msg.value;
   fundsDisbursed = false;
-  emit CreateEscrow(_productId, _buyer, _seller, _arbiter);
+  emit CreateEscrow(_productId, _buyer, _seller, _arbiter);//监听
  }
 
  function escrowInfo()public view returns (address, address, address, bool, uint, uint){
   return (buyer, seller, arbiter, fundsDisbursed, releaseCount, refundCount);
  }
 
+ /**/
  function releaseAmountToSeller(address caller) public{
   require(!fundsDisbursed);
   if ((caller == buyer || caller == seller || caller == arbiter) && releaseAmount[caller] != true) {
